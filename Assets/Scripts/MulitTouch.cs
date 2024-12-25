@@ -39,8 +39,11 @@ public class MulitTouch : MonoBehaviour
     void OnTouchDown(Touch touch)
     {
         Vector3 touchWorldPosition = GetTouchWorldPosition(touch);
-        touchPositionOffsets[touch.fingerId] = gameObject.transform.position - touchWorldPosition;
-        activeTouches[touch.fingerId] = transform;
+        if (IsTouchingThisObject(touchWorldPosition))
+        {
+            touchPositionOffsets[touch.fingerId] = gameObject.transform.position - touchWorldPosition;
+            activeTouches[touch.fingerId] = transform;
+        }
     }
 
     void OnTouchDrag(Touch touch)
@@ -69,5 +72,11 @@ public class MulitTouch : MonoBehaviour
     {
         Vector3 touchPosition = new Vector3(touch.position.x, touch.position.y, Camera.main.nearClipPlane);
         return Camera.main.ScreenToWorldPoint(touchPosition);
+    }
+
+    bool IsTouchingThisObject(Vector3 touchWorldPosition)
+    {
+        Collider2D collider = GetComponent<Collider2D>();
+        return collider != null && collider.OverlapPoint(touchWorldPosition);
     }
 }
