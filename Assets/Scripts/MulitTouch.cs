@@ -4,7 +4,8 @@ using UnityEngine;
 
 public class MulitTouch : MonoBehaviour
 {
-   Vector3 touchPositionOffset;
+    private Dictionary<int, Vector3> touchPositionOffsets = new Dictionary<int, Vector3>();
+    private Dictionary<int, Transform> activeTouches = new Dictionary<int, Transform>();
     private Vector3 lastPos;
     private Quaternion lastRot;
 
@@ -16,17 +17,10 @@ public class MulitTouch : MonoBehaviour
         lastRot = this.transform.rotation;
     }
 
-    private Vector3 GetTouchWorldPosition(Touch touch)
-    {
-        return Camera.main.ScreenToWorldPoint(touch.position);
-    }
-
     void Update()
     {
-        if (Input.touchCount > 0)
+        foreach (Touch touch in Input.touches)
         {
-            Touch touch = Input.GetTouch(0);
-
             switch (touch.phase)
             {
                 case TouchPhase.Began:
@@ -36,7 +30,7 @@ public class MulitTouch : MonoBehaviour
                     OnTouchDrag(touch);
                     break;
                 case TouchPhase.Ended:
-                    OnTouchUp();
+                    OnTouchUp(touch);
                     break;
             }
         }
@@ -44,20 +38,36 @@ public class MulitTouch : MonoBehaviour
 
     void OnTouchDown(Touch touch)
     {
-        touchPositionOffset = gameObject.transform.position - GetTouchWorldPosition(touch);
+        Vector3 touchWorldPosition = GetTouchWorldPosition(touch);
+        touchPositionOffsets[touch.fingerId] = gameObject.transform.position - touchWorldPosition;
+        activeTouches[touch.fingerId] = transform;
     }
 
     void OnTouchDrag(Touch touch)
     {
-        transform.position = GetTouchWorldPosition(touch) + touchPositionOffset;
+        if (activeTouches.ContainsKey(touch.fingerId))
+        {
+            transform.position = GetTouchWorldPosition(touch) + touchPositionOffsets[touch.fingerId];
+        }
     }
 
-    void OnTouchUp()
+    void OnTouchUp(Touch touch)
     {
-        if (lastActive == true)
+        if (activeTouches.ContainsKey(touch.fingerId))
         {
-            transform.position = lastPos;
-            transform.rotation = lastRot;
+            if (lastActive == true)
+            {
+                transform.position = lastPos;
+                transform.rotation = lastRot;
+            }
+            activeTouches.Remove(touch.fingerId);
+            touchPositionOffsets.Remove(touch.fingerId);
         }
+    }
+
+    Vector3 GetTouchWorldPosition(Touch touch)
+    {
+        Vector3 touchPosition = new Vector3(touch.position.x, touch.position.y, Camera.main.nearClipPlane);
+        return Camera.main.ScreenToWorldPoint(touchPosition);
     }
 }
